@@ -1,6 +1,6 @@
 # BlossomColorPicker
 
-A beautiful flower-shaped color picker for SwiftUI.
+A beautiful flower-shaped color picker for SwiftUI. Fully written by AI, tested by myself.
 
 ![Preview](Previews/preview.gif)
 
