@@ -3,53 +3,30 @@ import SwiftUI
 public struct ExpandedBlossomView: View {
     @Bindable var model: BlossomColorPickerModel
     let layout: PetalLayout
+    let supportsOpacity: Bool
 
     @Environment(\.blossomStyle) private var style
 
-    public init(model: BlossomColorPickerModel, layout: PetalLayout) {
+    public init(model: BlossomColorPickerModel, layout: PetalLayout, supportsOpacity: Bool = false) {
         self.model = model
         self.layout = layout
+        self.supportsOpacity = supportsOpacity
     }
 
     public var body: some View {
-        let ringRadius = layout.outerRadius + style.petalSize / 2 + BlossomConstants.outerRingInset
-        let sliderRadius = ringRadius + style.sliderWidth / 2 + BlossomConstants.sliderPadding
-        let totalSize = sliderRadius * 2 + style.sliderWidth + BlossomConstants.viewPadding
+        let controlRadius = Self.controlRadius(layout: layout, style: style)
+        let totalSize = Self.totalSize(layout: layout, style: style)
+        let center = CGPoint(x: totalSize / 2, y: totalSize / 2)
 
-        ZStack {
-            // Outer ring (always shows selected color, not hovered color)
-            OuterRingView(
-                color: model.selectedColor,
-                radius: ringRadius,
-                isExpanded: model.isExpanded,
-            )
-
-            // Blossom petals
-            BlossomPetalsView(
-                model: model,
-                layout: layout,
-                center: CGPoint(x: totalSize / 2, y: totalSize / 2),
-            )
-            .frame(width: totalSize, height: totalSize)
-
-            // Center circle (fixed color from JSON, tap to select or close if already selected)
-            // Appears first on expand, disappears last on collapse
-            CenterCircleView(
-                centerColor: layout.centerColor,
-                isExpanded: model.isExpanded,
-                expandDelay: 0,
-                collapseDelay: Double(layout.totalPetalCount) * BlossomConstants.petalAnimationDelay,
-            )
-
-            // Arc slider on the right
-            ArcSliderView(model: model, radius: sliderRadius)
-        }
-        .frame(width: totalSize, height: totalSize)
+        foregroundContent(
+            controlRadius: controlRadius,
+            totalSize: totalSize,
+            center: center,
+        )
         .contentShape(Rectangle())
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { value in
-                    let center = CGPoint(x: totalSize / 2, y: totalSize / 2)
                     if let (index, ring) = layout.petalIndex(at: value.location, center: center, petalSize: style.petalSize) {
                         if model.hoveredPetalIndex != index || model.hoveredRing != ring {
                             model.hoveredPetalIndex = index
@@ -61,8 +38,6 @@ public struct ExpandedBlossomView: View {
                     }
                 }
                 .onEnded { value in
-                    let center = CGPoint(x: totalSize / 2, y: totalSize / 2)
-
                     // Check if tap is on center circle
                     let dx = value.location.x - center.x
                     let dy = value.location.y - center.y
@@ -71,29 +46,24 @@ public struct ExpandedBlossomView: View {
                     print("[Gesture] onEnded: location=\(value.location), center=\(center), distance=\(distance)")
 
                     if distance <= style.centerCircleSize / 2 {
-                        // Tap on center circle - check if it matches current selection
-                        print("[Gesture] tap on center circle")
-                        let tappedColor = layout.centerColor
-                        if colorsMatch(tappedColor, model.selectedColor) {
-                            print("[Gesture] center color matches selected - collapsing")
-                            model.collapse()
-                        } else {
-                            print("[Gesture] selecting center color")
-                            model.selectCenterColor(layout: layout)
-                        }
+                        print("[Gesture] selecting center color")
+                        model.selectCenterColor(layout: layout)
                     } else if let (index, ring) = layout.petalIndex(at: value.location, center: center, petalSize: style.petalSize) {
                         // Tap on petal - check if it matches current selection
                         print("[Gesture] tap on petal: index=\(index), ring=\(ring)")
                         let tappedColor = layout.color(for: index, ring: ring)
                         if colorsMatch(tappedColor, model.selectedColor) {
                             print("[Gesture] petal color matches selected - collapsing")
-                            model.collapse()
+                            model.confirmSelection()
                         } else {
                             print("[Gesture] selecting petal color")
                             model.selectPetal(index: index, ring: ring, layout: layout)
                         }
+                    } else if isInsideArcControl(value.location, center: center, radius: controlRadius) {
+                        print("[Gesture] tap on arc slider")
                     } else {
-                        print("[Gesture] tap outside petals and center")
+                        print("[Gesture] tap empty picker area - confirming")
+                        model.confirmSelection()
                     }
 
                     model.hoveredPetalIndex = nil
@@ -118,14 +88,92 @@ public struct ExpandedBlossomView: View {
         }
     }
 
+    @ViewBuilder
+    private func foregroundContent(
+        controlRadius: CGFloat,
+        totalSize: CGFloat,
+        center: CGPoint
+    ) -> some View {
+        ZStack {
+            ColorPreviewArcView(
+                color: supportsOpacity ? model.previewColor : model.selectedColor,
+                radius: controlRadius,
+                startAngle: previewArcAngles.start,
+                endAngle: previewArcAngles.end,
+                isExpanded: model.isExpanded,
+            )
+
+            // Blossom petals
+            BlossomPetalsView(
+                model: model,
+                layout: layout,
+                center: center,
+            )
+            .frame(width: totalSize, height: totalSize)
+
+            // Center circle is a normal color option from the palette.
+            // Appears first on expand, disappears last on collapse
+            CenterCircleView(
+                centerColor: layout.centerColor,
+                showsCheckerboard: false,
+                isExpanded: model.isExpanded,
+                expandDelay: 0,
+                collapseDelay: Double(layout.totalPetalCount) * BlossomConstants.petalAnimationDelay,
+            )
+
+            if supportsOpacity {
+                ArcSliderView(model: model, radius: controlRadius, kind: .opacity)
+            }
+
+            ArcSliderView(model: model, radius: controlRadius, kind: .lightness)
+        }
+        .frame(width: totalSize, height: totalSize)
+    }
+
+    private func isInsideArcControl(_ point: CGPoint, center: CGPoint, radius: CGFloat) -> Bool {
+        let dx = point.x - center.x
+        let dy = point.y - center.y
+        let distance = sqrt(dx * dx + dy * dy)
+        let trackWidth = style.sliderWidth + BlossomConstants.arcThumbSizeOffset + 8
+        guard abs(distance - radius) <= trackWidth / 2 else { return false }
+
+        let degrees = atan2(dy, dx) * 180 / .pi
+        let normalizedDegrees = degrees < 0 ? degrees + 360 : degrees
+        let isLightnessArc = degrees >= BlossomConstants.arcStartAngle - 10
+            && degrees <= BlossomConstants.arcEndAngle + 10
+        let previewAngles = previewArcAngles
+        let isPreviewArc = if supportsOpacity {
+            degrees >= previewAngles.start - 10
+                && degrees <= previewAngles.end + 10
+        } else {
+            normalizedDegrees >= previewAngles.start - 10
+                && normalizedDegrees <= previewAngles.end + 10
+        }
+        let isOpacityArc = supportsOpacity
+            && normalizedDegrees >= BlossomConstants.opacityArcStartAngle - 10
+            && normalizedDegrees <= BlossomConstants.opacityArcEndAngle + 10
+        return isLightnessArc || isPreviewArc || isOpacityArc
+    }
+
+    private var previewArcAngles: (start: Double, end: Double) {
+        supportsOpacity
+            ? (BlossomConstants.previewArcStartAngle, BlossomConstants.previewArcEndAngle)
+            : (BlossomConstants.opacityArcStartAngle, BlossomConstants.opacityArcEndAngle)
+    }
+
     /// Calculate the total size needed for the expanded view
     public static func totalSize(layout: PetalLayout, style: BlossomStyle = .default) -> CGFloat {
-        let ringRadius = layout.outerRadius + style.petalSize / 2 + BlossomConstants.outerRingInset
-        let sliderRadius = ringRadius + style.sliderWidth / 2 + BlossomConstants.sliderPadding
-        return sliderRadius * 2 + style.sliderWidth + BlossomConstants.viewPadding
+        let radius = controlRadius(layout: layout, style: style)
+        let controlDiameter = style.sliderWidth + BlossomConstants.arcThumbSizeOffset
+        return radius * 2 + controlDiameter + BlossomConstants.viewPadding
+    }
+
+    private static func controlRadius(layout: PetalLayout, style: BlossomStyle) -> CGFloat {
+        layout.outerRadius + style.petalSize / 2 + BlossomConstants.controlArcInset
     }
 }
 
+#if BLOSSOM_ENABLE_PREVIEWS
 #Preview {
     @Previewable @State var model = BlossomColorPickerModel(initialColor: .green)
 
@@ -138,3 +186,4 @@ public struct ExpandedBlossomView: View {
     }
     .padding(40)
 }
+#endif

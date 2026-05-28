@@ -33,6 +33,7 @@ struct PetalView: View {
     }
 }
 
+#if BLOSSOM_ENABLE_PREVIEWS
 #Preview {
     HStack(spacing: 20) {
         PetalView(
@@ -54,3 +55,4 @@ struct PetalView: View {
     }
     .padding(40)
 }
+#endif

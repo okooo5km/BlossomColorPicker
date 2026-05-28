@@ -11,7 +11,10 @@ struct CollapsedSwatchView: View {
             .frame(width: BlossomConstants.collapsedSwatchSize, height: BlossomConstants.collapsedSwatchSize)
             .overlay(
                 Circle()
-                    .stroke(.white.opacity(BlossomConstants.collapsedSwatchBorderOpacity), lineWidth: BlossomConstants.borderWidth),
+                    .stroke(
+                        .primary.opacity(BlossomConstants.collapsedSwatchBorderOpacity),
+                        lineWidth: BlossomConstants.borderWidth,
+                    ),
             )
             .scaleEffect(isExpanded ? 0.0 : 1.0)
             .opacity(isExpanded ? 0.0 : 1.0)
@@ -24,6 +27,7 @@ struct CollapsedSwatchView: View {
     }
 }
 
+#if BLOSSOM_ENABLE_PREVIEWS
 #Preview {
     VStack(spacing: 20) {
         CollapsedSwatchView(
@@ -40,3 +44,4 @@ struct CollapsedSwatchView: View {
     }
     .padding(40)
 }
+#endif

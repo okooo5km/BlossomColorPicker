@@ -172,6 +172,7 @@ struct BlossomPetalsView: View {
     }
 }
 
+#if BLOSSOM_ENABLE_PREVIEWS
 #Preview {
     @Previewable @State var model = BlossomColorPickerModel()
 
@@ -185,3 +186,4 @@ struct BlossomPetalsView: View {
         model.expand()
     }
 }
+#endif

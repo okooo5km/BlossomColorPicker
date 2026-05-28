@@ -27,6 +27,7 @@ struct BlossomColorPickerView: View {
     }
 }
 
+#if BLOSSOM_ENABLE_PREVIEWS
 #Preview("Collapsed") {
     @Previewable @State var model = BlossomColorPickerModel(initialColor: .blue)
 
@@ -49,3 +50,4 @@ struct BlossomColorPickerView: View {
     }
     .padding(40)
 }
+#endif

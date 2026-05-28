@@ -8,6 +8,7 @@ public final class BlossomColorPickerModel {
             updateFromColor()
         }
     }
+    public var opacity: Double
 
     /// Hue in degrees (0-360)
     public private(set) var hue: Double
@@ -21,14 +22,21 @@ public final class BlossomColorPickerModel {
     public var hoveredRing: PetalLayout.Ring?
 
     private var isUpdatingInternally = false
+    private var editingStartColor: Color?
+    private var editingStartOpacity: Double?
 
-    public init(initialColor: Color = .blue) {
+    public init(initialColor: Color = .blue, opacity initialOpacity: Double? = nil) {
         selectedColor = initialColor
         // Extract HSB from color
-        let (h, s, b) = extractHSB(from: initialColor)
+        let (h, s, b, a) = extractHSBA(from: initialColor)
         hue = h
         saturation = s
         lightness = b
+        opacity = max(0, min(1, initialOpacity ?? a))
+    }
+
+    public var previewColor: Color {
+        selectedColor.opacity(opacity)
     }
 
     private func updateFromColor() {
@@ -71,6 +79,12 @@ public final class BlossomColorPickerModel {
         print("[Model] updateLightness: \(oldLight) -> \(lightness)")
     }
 
+    public func updateOpacity(_ newOpacity: Double) {
+        let oldOpacity = opacity
+        opacity = max(0, min(1, newOpacity))
+        print("[Model] updateOpacity: \(oldOpacity) -> \(opacity)")
+    }
+
     public func selectPetal(index: Int, ring: PetalLayout.Ring, layout: PetalLayout) {
         print("[Model] selectPetal: index=\(index), ring=\(ring)")
         // Get color directly from layout (JSON colors)
@@ -105,6 +119,8 @@ public final class BlossomColorPickerModel {
 
     public func expand() {
         print("[Model] expand() called, was: \(isExpanded)")
+        editingStartColor = selectedColor
+        editingStartOpacity = opacity
         isExpanded = true
         print("[Model] expand() done, now: \(isExpanded)")
     }
@@ -115,6 +131,24 @@ public final class BlossomColorPickerModel {
         hoveredPetalIndex = nil
         hoveredRing = nil
         print("[Model] collapse() done, now: \(isExpanded)")
+    }
+
+    public func confirmSelection() {
+        editingStartColor = nil
+        editingStartOpacity = nil
+        collapse()
+    }
+
+    public func cancelSelection() {
+        if let color = editingStartColor {
+            selectColor(color)
+        }
+        if let opacity = editingStartOpacity {
+            updateOpacity(opacity)
+        }
+        editingStartColor = nil
+        editingStartOpacity = nil
+        collapse()
     }
 
     public func toggle() {

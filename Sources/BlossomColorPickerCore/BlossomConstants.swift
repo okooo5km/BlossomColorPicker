@@ -26,15 +26,24 @@ public enum BlossomConstants {
     public static let innerPetalSize: CGFloat = 30
 
     /// Size of the center circle
-    public static let centerCircleSize: CGFloat = 30
+    public static let centerCircleSize: CGFloat = 24
 
-    // MARK: - Outer Ring
+    // MARK: - Control Arc
 
-    /// Width of the outer ring border stroke
-    public static let outerRingBorderWidth: CGFloat = 6
+    /// Width of the old full-ring preview stroke. Kept for style compatibility.
+    public static let outerRingBorderWidth: CGFloat = 9
 
-    /// Gap between outer ring border and the color picker circles (petals)
+    /// Former ring backing width. Kept for style compatibility.
+    public static let outerRingGlassBaseWidth: CGFloat = 15
+
+    /// Former fill opacity for the current-color preview area.
+    public static let outerRingFillOpacity: Double = 0.08
+
+    /// Gap between the shared control arc and the color picker circles.
     public static let outerRingInset: CGFloat = 12
+
+    /// Inset from the outer petal edge to the shared control arc.
+    public static let controlArcInset: CGFloat = 17
 
     // MARK: - Borders
 
@@ -66,6 +75,18 @@ public enum BlossomConstants {
 
     /// Arc slider end angle in degrees (30° ≈ 4 o'clock)
     public static let arcEndAngle: Double = 30
+
+    /// Current-color preview arc start angle in degrees when opacity is enabled.
+    public static let previewArcStartAngle: Double = -120
+
+    /// Current-color preview arc end angle in degrees when opacity is enabled.
+    public static let previewArcEndAngle: Double = -60
+
+    /// Opacity arc slider start angle in degrees (mirrors the lightness arc on the left)
+    public static let opacityArcStartAngle: Double = 150
+
+    /// Opacity arc slider end angle in degrees (mirrors the lightness arc on the left)
+    public static let opacityArcEndAngle: Double = 210
 
     /// Arc slider radius from center
     public static let arcSliderRadius: CGFloat = 80
@@ -101,7 +122,7 @@ public enum BlossomConstants {
     public static let collapsedSwatchSize: CGFloat = 32
 
     /// Border opacity for the collapsed swatch
-    public static let collapsedSwatchBorderOpacity: CGFloat = 0.3
+    public static let collapsedSwatchBorderOpacity: CGFloat = 0.16
 
     // MARK: - Layout Spacing
 
@@ -109,5 +130,5 @@ public enum BlossomConstants {
     public static let sliderPadding: CGFloat = 12
 
     /// Extra padding for total view size
-    public static let viewPadding: CGFloat = 20
+    public static let viewPadding: CGFloat = 14
 }

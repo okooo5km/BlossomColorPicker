@@ -16,6 +16,7 @@
             at screenPoint: CGPoint,
             model: BlossomColorPickerModel,
             layout: PetalLayout,
+            supportsOpacity: Bool = false,
             style: BlossomStyle = .default,
         ) {
             print("[Presenter] show() called, screenPoint: \(screenPoint)")
@@ -31,7 +32,7 @@
             print("[Presenter] totalSize: \(totalSize)")
 
             // Create content view
-            let contentView = ExpandedBlossomView(model: model, layout: layout)
+            let contentView = ExpandedBlossomView(model: model, layout: layout, supportsOpacity: supportsOpacity)
                 .blossomStyle(style)
 
             // Create borderless window
@@ -118,8 +119,16 @@
         }
 
         private func setupClickOutsideMonitor(totalSize _: CGFloat) {
-            localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown]) { [weak self] event in
                 guard let self, let window else { return event }
+
+                if event.type == .keyDown {
+                    if event.keyCode == 53 {
+                        model?.cancelSelection()
+                        return nil
+                    }
+                    return event
+                }
 
                 // Get click location in screen coordinates
                 let clickLocation = NSEvent.mouseLocation
@@ -130,7 +139,7 @@
                 // Check if click is outside the window
                 if !windowFrame.contains(clickLocation) {
                     // Collapse the model (which will trigger dismiss via onChange)
-                    model?.collapse()
+                    model?.confirmSelection()
                 }
 
                 return event
@@ -152,7 +161,7 @@
                 ) { [weak self] _ in
                     print("[Presenter] App resigned active - closing picker")
                     Task { @MainActor in
-                        self?.model?.collapse()
+                        self?.model?.confirmSelection()
                     }
                 }
             }

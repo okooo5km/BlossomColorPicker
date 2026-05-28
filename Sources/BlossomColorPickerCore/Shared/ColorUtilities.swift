@@ -6,18 +6,30 @@ import SwiftUI
     import AppKit
 #endif
 
-/// Extract HSB components from a SwiftUI Color
-/// - Returns: Tuple with hue (0-360), saturation (0-1), brightness (0-100)
-public func extractHSB(from color: Color) -> (hue: Double, saturation: Double, brightness: Double) {
+/// Extract HSBA components from a SwiftUI Color
+/// - Returns: Tuple with hue (0-360), saturation (0-1), brightness (0-100), alpha (0-1)
+public func extractHSBA(from color: Color) -> (hue: Double, saturation: Double, brightness: Double, alpha: Double) {
     #if canImport(UIKit)
         let uiColor = UIColor(color)
         var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         uiColor.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
-        return (h * 360.0, s, b * 100.0)
+        return (h * 360.0, s, b * 100.0, a)
     #elseif canImport(AppKit)
         let nsColor = NSColor(color).usingColorSpace(.sRGB) ?? NSColor(color)
-        return (nsColor.hueComponent * 360.0, nsColor.saturationComponent, nsColor.brightnessComponent * 100.0)
+        return (
+            nsColor.hueComponent * 360.0,
+            nsColor.saturationComponent,
+            nsColor.brightnessComponent * 100.0,
+            nsColor.alphaComponent
+        )
     #endif
+}
+
+/// Extract HSB components from a SwiftUI Color
+/// - Returns: Tuple with hue (0-360), saturation (0-1), brightness (0-100)
+public func extractHSB(from color: Color) -> (hue: Double, saturation: Double, brightness: Double) {
+    let components = extractHSBA(from: color)
+    return (components.hue, components.saturation, components.brightness)
 }
 
 /// Create a border color with adjusted saturation and brightness

@@ -18,37 +18,59 @@ import SwiftUI
 
 public struct BlossomColorPicker: View {
     @Binding private var selection: Color
+    private let opacity: Binding<Double>?
     @State private var model: BlossomColorPickerModel
     @State private var presenter = PickerPresenter()
     @State private var isCooldown = false
 
     private let layout: PetalLayout
+    private let supportsOpacity: Bool
     private let onColorChange: ((Color) -> Void)?
+    private let onOpacityChange: ((Double) -> Void)?
     private let onDismiss: ((Color) -> Void)?
+
+    private var boundOpacity: Double? {
+        opacity?.wrappedValue
+    }
 
     public init(
         selection: Binding<Color>,
+        opacity: Binding<Double>? = nil,
+        supportsOpacity: Bool = false,
         layout: PetalLayout = PetalLayout(),
         onColorChange: ((Color) -> Void)? = nil,
+        onOpacityChange: ((Double) -> Void)? = nil,
         onDismiss: ((Color) -> Void)? = nil,
     ) {
         _selection = selection
-        _model = State(wrappedValue: BlossomColorPickerModel(initialColor: selection.wrappedValue))
+        self.opacity = opacity
+        _model = State(wrappedValue: BlossomColorPickerModel(
+            initialColor: selection.wrappedValue,
+            opacity: opacity?.wrappedValue
+        ))
         self.layout = layout
+        self.supportsOpacity = supportsOpacity && opacity != nil
         self.onColorChange = onColorChange
+        self.onOpacityChange = onOpacityChange
         self.onDismiss = onDismiss
     }
 
     public init(
         initialColor: Color = .blue,
+        initialOpacity: Double = 1.0,
+        supportsOpacity: Bool = false,
         layout: PetalLayout = PetalLayout(),
         onColorChange: ((Color) -> Void)? = nil,
+        onOpacityChange: ((Double) -> Void)? = nil,
         onDismiss: ((Color) -> Void)? = nil,
     ) {
         _selection = .constant(initialColor)
-        _model = State(wrappedValue: BlossomColorPickerModel(initialColor: initialColor))
+        opacity = nil
+        _model = State(wrappedValue: BlossomColorPickerModel(initialColor: initialColor, opacity: initialOpacity))
         self.layout = layout
+        self.supportsOpacity = supportsOpacity
         self.onColorChange = onColorChange
+        self.onOpacityChange = onOpacityChange
         self.onDismiss = onDismiss
     }
 
@@ -57,12 +79,18 @@ public struct BlossomColorPicker: View {
         GeometryReader { geometry in
             let size = min(geometry.size.width, geometry.size.height)
 
-            Circle()
-                .fill(model.selectedColor)
+            ZStack {
+                if supportsOpacity {
+                    BlossomCheckerboardView(tileSize: max(size / 4, 4))
+                }
+                Circle()
+                    .fill(supportsOpacity ? model.previewColor : model.selectedColor)
+            }
+                .clipShape(Circle())
                 .overlay(
                     Circle()
                         .stroke(
-                            .white.opacity(BlossomConstants.collapsedSwatchBorderOpacity),
+                            .primary.opacity(BlossomConstants.collapsedSwatchBorderOpacity),
                             lineWidth: BlossomConstants.borderWidth,
                         ),
                 )
@@ -88,7 +116,7 @@ public struct BlossomColorPicker: View {
                     let frame = geometry.frame(in: .global)
                     let screenPoint = convertToScreenCoordinates(frame: frame)
                     print("[BlossomColorPicker] calling presenter.show()")
-                    presenter.show(at: screenPoint, model: model, layout: layout)
+                    presenter.show(at: screenPoint, model: model, layout: layout, supportsOpacity: supportsOpacity)
                 }
                 .accessibilityLabel("Color picker")
                 .accessibilityHint("Tap to expand color picker")
@@ -98,6 +126,19 @@ public struct BlossomColorPicker: View {
         .onChange(of: model.selectedColor) { _, newValue in
             selection = newValue
             onColorChange?(newValue)
+        }
+        .onChange(of: model.opacity) { _, newValue in
+            opacity?.wrappedValue = newValue
+            onOpacityChange?(newValue)
+        }
+        .onChange(of: selection) { _, newValue in
+            if model.selectedColor != newValue {
+                model.selectedColor = newValue
+            }
+        }
+        .onChange(of: boundOpacity) { _, newValue in
+            guard let newValue, abs(model.opacity - newValue) > 0.001 else { return }
+            model.updateOpacity(newValue)
         }
         .onChange(of: model.isExpanded) { wasExpanded, isExpanded in
             print("[BlossomColorPicker] onChange isExpanded: \(wasExpanded) -> \(isExpanded)")
@@ -134,6 +175,7 @@ public struct BlossomColorPicker: View {
     }
 }
 
+#if BLOSSOM_ENABLE_PREVIEWS
 #Preview("Binding-based") {
     @Previewable @State var color = Color.blue
 
@@ -162,3 +204,4 @@ public struct BlossomColorPicker: View {
     .frame(width: 32, height: 32)
     .padding(60)
 }
+#endif

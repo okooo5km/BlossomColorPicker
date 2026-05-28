@@ -1,19 +1,35 @@
 import SwiftUI
 
 struct ArcSliderView: View {
+    enum Kind {
+        case lightness
+        case opacity
+    }
+
     @Bindable var model: BlossomColorPickerModel
     let radius: CGFloat
+    let kind: Kind
 
     @Environment(\.blossomStyle) private var style
 
     @State private var isDragging = false
 
     private var startAngle: Double {
-        BlossomConstants.arcStartAngle
+        switch kind {
+        case .lightness:
+            BlossomConstants.arcStartAngle
+        case .opacity:
+            BlossomConstants.opacityArcStartAngle
+        }
     }
 
     private var endAngle: Double {
-        BlossomConstants.arcEndAngle
+        switch kind {
+        case .lightness:
+            BlossomConstants.arcEndAngle
+        case .opacity:
+            BlossomConstants.opacityArcEndAngle
+        }
     }
 
     private var arcSpan: Double {
@@ -21,9 +37,16 @@ struct ArcSliderView: View {
     }
 
     var body: some View {
-        let thumbAngle = startAngle + (1.0 - model.lightness / 100.0) * arcSpan
+        let thumbAngle = startAngle + normalizedThumbValue * arcSpan
 
         ZStack {
+            ArcShape(startAngle: .degrees(startAngle), endAngle: .degrees(endAngle))
+                .stroke(
+                    .primary.opacity(0.08),
+                    style: StrokeStyle(lineWidth: style.sliderWidth + 2, lineCap: .round),
+                )
+                .frame(width: radius * 2, height: radius * 2)
+
             // Arc track with gradient
             ArcShape(startAngle: .degrees(startAngle), endAngle: .degrees(endAngle))
                 .stroke(
@@ -58,6 +81,7 @@ struct ArcSliderView: View {
         }
         .animation(isDragging ? nil : .blossom, value: model.hue)
         .animation(isDragging ? nil : .blossom, value: model.saturation)
+        .animation(isDragging ? nil : .blossom, value: model.opacity)
         .scaleEffect(model.isExpanded ? 1.0 : 0.0)
         .opacity(model.isExpanded ? 1.0 : 0.0)
         .animation(.blossom(delay: BlossomConstants.arcSliderAnimationDelay), value: model.isExpanded)
@@ -65,7 +89,7 @@ struct ArcSliderView: View {
             DragGesture(minimumDistance: 0)
                 .onChanged { value in
                     isDragging = true
-                    updateLightness(from: value.location, center: CGPoint(x: radius, y: radius))
+                    updateValue(from: value.location, center: CGPoint(x: radius, y: radius))
                 }
                 .onEnded { _ in
                     isDragging = false
@@ -73,35 +97,63 @@ struct ArcSliderView: View {
         )
     }
 
-    private var currentThumbColor: Color {
-        // Blend from selected color to white based on brightness
-        let t = model.lightness / 100.0
-        let adjustedSaturation = model.saturation * (1.0 - t * 0.8) // Reduce saturation towards white
-        return Color(hue: model.hue / 360.0, saturation: adjustedSaturation, brightness: 0.2 + t * 0.8)
-    }
-
-    private var gradientColors: [Color] {
-        // Gradient from dark color to white
-        (0 ..< BlossomConstants.arcGradientSteps).map { i in
-            let t = Double(i) / Double(BlossomConstants.arcGradientSteps - 1)
-            let brightness = 1.0 - t // 1.0 at start (white end), 0.0 at end (dark end)
-            let saturation = model.saturation * t // 0 at white end, full at color end
-            return Color(hue: model.hue / 360.0, saturation: saturation, brightness: max(0.1, brightness * 0.8 + 0.2))
+    private var normalizedThumbValue: Double {
+        switch kind {
+        case .lightness:
+            return 1.0 - model.lightness / 100.0
+        case .opacity:
+            return model.opacity
         }
     }
 
-    private func updateLightness(from location: CGPoint, center: CGPoint) {
+    private var currentThumbColor: Color {
+        switch kind {
+        case .lightness:
+            // Blend from selected color to white based on brightness
+            let t = model.lightness / 100.0
+            let adjustedSaturation = model.saturation * (1.0 - t * 0.8) // Reduce saturation towards white
+            return Color(hue: model.hue / 360.0, saturation: adjustedSaturation, brightness: 0.2 + t * 0.8)
+        case .opacity:
+            return model.selectedColor.opacity(model.opacity)
+        }
+    }
+
+    private var gradientColors: [Color] {
+        switch kind {
+        case .lightness:
+            // Gradient from dark color to white
+            return (0 ..< BlossomConstants.arcGradientSteps).map { i in
+                let t = Double(i) / Double(BlossomConstants.arcGradientSteps - 1)
+                let brightness = 1.0 - t // 1.0 at start (white end), 0.0 at end (dark end)
+                let saturation = model.saturation * t // 0 at white end, full at color end
+                return Color(hue: model.hue / 360.0, saturation: saturation, brightness: max(0.1, brightness * 0.8 + 0.2))
+            }
+        case .opacity:
+            return (0 ..< BlossomConstants.arcGradientSteps).map { i in
+                let t = Double(i) / Double(BlossomConstants.arcGradientSteps - 1)
+                return model.selectedColor.opacity(max(0.08, t))
+            }
+        }
+    }
+
+    private func updateValue(from location: CGPoint, center: CGPoint) {
         let dx = location.x - center.x
         let dy = location.y - center.y
         var angle = atan2(dy, dx) * 180 / .pi
 
-        // Clamp angle to arc range
+        if case .opacity = kind, angle < 0 {
+            angle += 360
+        }
+
         angle = max(startAngle, min(endAngle, angle))
 
-        // Convert angle to lightness (0-100)
         let normalizedAngle = (angle - startAngle) / arcSpan
-        let lightness = (1.0 - normalizedAngle) * 100.0
-        model.updateLightness(lightness)
+        switch kind {
+        case .lightness:
+            model.updateLightness((1.0 - normalizedAngle) * 100.0)
+        case .opacity:
+            model.updateOpacity(normalizedAngle)
+        }
     }
 }
 
@@ -124,13 +176,15 @@ struct ArcShape: Shape {
     }
 }
 
+#if BLOSSOM_ENABLE_PREVIEWS
 #Preview {
     @Previewable @State var model = BlossomColorPickerModel(initialColor: .green)
 
-    ArcSliderView(model: model, radius: BlossomConstants.arcSliderRadius)
+    ArcSliderView(model: model, radius: BlossomConstants.arcSliderRadius, kind: .lightness)
         .frame(width: 250, height: 250)
         .onAppear {
             model.expand()
         }
         .padding(40)
 }
+#endif

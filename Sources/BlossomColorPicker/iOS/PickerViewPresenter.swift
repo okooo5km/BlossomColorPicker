@@ -16,6 +16,7 @@
             at screenPoint: CGPoint,
             model: BlossomColorPickerModel,
             layout: PetalLayout,
+            supportsOpacity: Bool = false,
             style: BlossomStyle = .default,
         ) {
             print("[Presenter] show() called, screenPoint: \(screenPoint)")
@@ -42,11 +43,11 @@
             overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             overlay.onTapOutside = { [weak self] in
                 print("[Presenter] Tap outside - collapsing")
-                self?.model?.collapse()
+                self?.model?.confirmSelection()
             }
 
             // Create hosting controller for SwiftUI content
-            let contentView = ExpandedBlossomView(model: model, layout: layout)
+            let contentView = ExpandedBlossomView(model: model, layout: layout, supportsOpacity: supportsOpacity)
                 .blossomStyle(style)
             let hostingController = UIHostingController(rootView: AnyView(contentView))
             hostingController.view.backgroundColor = .clear
@@ -134,7 +135,7 @@
                 ) { [weak self] _ in
                     print("[Presenter] App entered background - closing picker")
                     Task { @MainActor in
-                        self?.model?.collapse()
+                        self?.model?.confirmSelection()
                     }
                 }
             }

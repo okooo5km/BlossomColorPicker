@@ -11,6 +11,7 @@ A beautiful flower-shaped color picker for SwiftUI. Fully written by AI, tested 
 - Simple SwiftUI integration
 - Customizable color palette via JSON
 - Brightness slider built-in
+- Optional opacity slider for alpha-capable workflows
 
 ## Requirements
 
@@ -39,9 +40,14 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var color: Color = .blue
+    @State private var opacity: Double = 1
 
     var body: some View {
-        BlossomColorPicker(selection: $color)
+        BlossomColorPicker(
+            selection: $color,
+            opacity: $opacity,
+            supportsOpacity: true
+        )
             .frame(width: 32, height: 32)
     }
 }
@@ -52,8 +58,13 @@ struct ContentView: View {
 ```swift
 BlossomColorPicker(
     initialColor: .orange,
+    initialOpacity: 0.8,
+    supportsOpacity: true,
     onColorChange: { color in
         print("Color changed: \(color)")
+    },
+    onOpacityChange: { opacity in
+        print("Opacity changed: \(opacity)")
     },
     onDismiss: { finalColor in
         print("Picker closed with: \(finalColor)")
@@ -64,9 +75,15 @@ BlossomColorPicker(
 ## How It Works
 
 1. Tap the color swatch to open the picker
-2. Drag or tap on petals to select a color
+2. Drag or tap on petals or the center dot to select a color
 3. Use the side slider to adjust brightness
-4. Tap the same color or outside to close
+4. Enable `supportsOpacity` to show a mirrored opacity slider on the left
+5. Tap empty space or the check button to confirm; tap the x button to cancel
+
+## Release Notes
+
+This project currently ships by tagging releases, starting from `1.0.0`.
+There is no changelog or automated release workflow in the repository yet.
 
 ## License
 

@@ -30,7 +30,7 @@ public struct BlossomColors: Codable, Sendable {
         else {
             // Fallback colors
             return BlossomColors(
-                center: [RGBColor(r: 253, g: 253, b: 253)],
+                center: [RGBColor(r: 255, g: 255, b: 255)],
                 ring_1: [
                     RGBColor(r: 250, g: 244, b: 209),
                     RGBColor(r: 246, g: 226, b: 218),

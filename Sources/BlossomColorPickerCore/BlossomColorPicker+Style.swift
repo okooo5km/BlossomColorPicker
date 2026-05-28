@@ -30,8 +30,15 @@ public struct BlossomStyle: Sendable {
     public static let `default` = BlossomStyle()
 }
 
+private struct BlossomStyleKey: EnvironmentKey {
+    static let defaultValue: BlossomStyle = .default
+}
+
 extension EnvironmentValues {
-    @Entry var blossomStyle: BlossomStyle = .default
+    var blossomStyle: BlossomStyle {
+        get { self[BlossomStyleKey.self] }
+        set { self[BlossomStyleKey.self] = newValue }
+    }
 }
 
 public extension View {
