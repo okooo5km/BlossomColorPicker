@@ -1,17 +1,27 @@
 # BlossomColorPicker
 
-A beautiful flower-shaped color picker for SwiftUI. Fully written by AI, tested by myself.
+A compact SwiftUI color picker forked from
+[Lakr233/BlossomColorPicker](https://github.com/Lakr233/BlossomColorPicker).
+This fork keeps the original blossom interaction and adds a smaller
+export-workflow friendly layout with optional opacity controls.
 
 ![Preview](Previews/preview.gif)
 
+Opacity-enabled mode:
+
+![Opacity Preview](Previews/preview-opacity.gif)
+
 ## Features
 
-- Petal-based color selection with smooth animations
+- Petal-based color selection with smooth bloom animations
 - Works on iOS and macOS
-- Simple SwiftUI integration
+- Simple SwiftUI integration with binding and callback APIs
 - Customizable color palette via JSON
 - Brightness slider built-in
-- Optional opacity slider for alpha-capable workflows
+- Optional mirrored opacity slider for alpha-capable workflows
+- Compact arc preview for the current color
+- Plain color sample rendering, so glass/material effects do not distort the
+  palette values
 
 ## Requirements
 
@@ -26,13 +36,34 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Lakr233/BlossomColorPicker", from: "1.0.0")
+    .package(
+        url: "https://github.com/okooo5km/BlossomColorPicker.git",
+        branch: "main"
+    )
 ]
 ```
 
 Or in Xcode: File → Add Package Dependencies → paste the URL.
 
 ## Usage
+
+Basic color selection:
+
+```swift
+import BlossomColorPicker
+import SwiftUI
+
+struct ContentView: View {
+    @State private var color: Color = .blue
+
+    var body: some View {
+        BlossomColorPicker(selection: $color)
+            .frame(width: 32, height: 32)
+    }
+}
+```
+
+Opacity-enabled selection:
 
 ```swift
 import BlossomColorPicker
@@ -78,12 +109,25 @@ BlossomColorPicker(
 2. Drag or tap on petals or the center dot to select a color
 3. Use the side slider to adjust brightness
 4. Enable `supportsOpacity` to show a mirrored opacity slider on the left
-5. Tap empty space or the check button to confirm; tap the x button to cancel
+5. Tap empty picker space or click outside to confirm
+6. Press Escape on macOS to cancel and restore the previous value
 
 ## Release Notes
 
-This project currently ships by tagging releases, starting from `1.0.0`.
-There is no changelog or automated release workflow in the repository yet.
+This fork currently tracks changes on `main` and is used by LottieGo as a
+Swift Package dependency. Version tags can be added later once the API surface
+settles.
+
+## Credits
+
+This repository is a respectful fork of
+[Lakr233/BlossomColorPicker](https://github.com/Lakr233/BlossomColorPicker).
+The original project, blossom-shaped picker concept, and base implementation
+come from [@Lakr233](https://github.com/Lakr233). The original idea credit is
+also kept below, exactly where it belongs.
+
+This fork focuses on the needs of LottieGo's export background color workflow:
+compact layout, opacity-aware interaction, and preview assets for that usage.
 
 ## License
 
