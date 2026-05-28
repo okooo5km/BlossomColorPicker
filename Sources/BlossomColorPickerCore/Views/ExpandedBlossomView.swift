@@ -18,11 +18,16 @@ public struct ExpandedBlossomView: View {
         let totalSize = Self.totalSize(layout: layout, style: style)
         let center = CGPoint(x: totalSize / 2, y: totalSize / 2)
 
-        foregroundContent(
-            controlRadius: controlRadius,
-            totalSize: totalSize,
-            center: center,
-        )
+        ZStack {
+            transparentHitTarget
+
+            foregroundContent(
+                controlRadius: controlRadius,
+                totalSize: totalSize,
+                center: center,
+            )
+        }
+        .frame(width: totalSize, height: totalSize)
         .contentShape(Rectangle())
         .gesture(
             DragGesture(minimumDistance: 0)
@@ -86,6 +91,13 @@ public struct ExpandedBlossomView: View {
                 model.hoveredRing = nil
             }
         }
+    }
+
+    private var transparentHitTarget: some View {
+        // A nearly invisible fill keeps transparent picker areas hit-testable
+        // inside the AppKit hosting window.
+        Color.white.opacity(0.001)
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder

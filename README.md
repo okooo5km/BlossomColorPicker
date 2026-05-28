@@ -20,6 +20,8 @@ Opacity-enabled mode:
 - Brightness slider built-in
 - Optional mirrored opacity slider for alpha-capable workflows
 - Compact arc preview for the current color
+- Transparent empty picker space can confirm and dismiss the picker, matching
+  lightweight popover-style color picking
 - Plain color sample rendering, so glass/material effects do not distort the
   palette values
 
@@ -109,8 +111,13 @@ BlossomColorPicker(
 2. Drag or tap on petals or the center dot to select a color
 3. Use the side slider to adjust brightness
 4. Enable `supportsOpacity` to show a mirrored opacity slider on the left
-5. Tap empty picker space or click outside to confirm
+5. Tap transparent empty picker space or click outside to confirm
 6. Press Escape on macOS to cancel and restore the previous value
+
+The expanded picker includes an invisible hit target behind the flower and arc
+controls. This keeps visually transparent areas interactive, so users can close
+the picker by clicking the empty space they naturally see instead of hunting
+for an invisible window boundary.
 
 ## Release Notes
 
