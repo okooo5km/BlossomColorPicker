@@ -1,25 +1,25 @@
+import Combine
 import SwiftUI
 
-@Observable
 @MainActor
-public final class BlossomColorPickerModel {
-    public var selectedColor: Color {
+public final class BlossomColorPickerModel: ObservableObject {
+    @Published public var selectedColor: Color {
         didSet {
             updateFromColor()
         }
     }
-    public var opacity: Double
+    @Published public var opacity: Double
 
     /// Hue in degrees (0-360)
-    public private(set) var hue: Double
+    @Published public private(set) var hue: Double
     /// Saturation (0-1)
-    public private(set) var saturation: Double
+    @Published public private(set) var saturation: Double
     /// Lightness/Brightness (0-100)
-    public private(set) var lightness: Double
+    @Published public private(set) var lightness: Double
 
-    public var isExpanded: Bool = false
-    public var hoveredPetalIndex: Int?
-    public var hoveredRing: PetalLayout.Ring?
+    @Published public var isExpanded: Bool = false
+    @Published public var hoveredPetalIndex: Int?
+    @Published public var hoveredRing: PetalLayout.Ring?
 
     private var isUpdatingInternally = false
     private var editingStartColor: Color?
@@ -48,7 +48,9 @@ public final class BlossomColorPickerModel {
         hue = h
         saturation = s
         lightness = b
-        print("[Model] updateFromColor: hue \(oldHue) -> \(hue), sat \(oldSat) -> \(saturation), light \(oldLight) -> \(lightness)")
+        print(
+            "[Model] updateFromColor: hue \(oldHue) -> \(hue), sat \(oldSat) -> \(saturation), light \(oldLight) -> \(lightness)"
+        )
     }
 
     public func updateHue(_ newHue: Double) {

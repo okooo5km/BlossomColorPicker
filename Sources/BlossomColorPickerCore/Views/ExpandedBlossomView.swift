@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct ExpandedBlossomView: View {
-    @Bindable var model: BlossomColorPickerModel
+    @ObservedObject var model: BlossomColorPickerModel
     let layout: PetalLayout
     let supportsOpacity: Bool
 
@@ -32,7 +32,9 @@ public struct ExpandedBlossomView: View {
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { value in
-                    if let (index, ring) = layout.petalIndex(at: value.location, center: center, petalSize: style.petalSize) {
+                    if let (index, ring) = layout.petalIndex(
+                        at: value.location, center: center, petalSize: style.petalSize)
+                    {
                         if model.hoveredPetalIndex != index || model.hoveredRing != ring {
                             model.hoveredPetalIndex = index
                             model.hoveredRing = ring
@@ -53,7 +55,9 @@ public struct ExpandedBlossomView: View {
                     if distance <= style.centerCircleSize / 2 {
                         print("[Gesture] selecting center color")
                         model.selectCenterColor(layout: layout)
-                    } else if let (index, ring) = layout.petalIndex(at: value.location, center: center, petalSize: style.petalSize) {
+                    } else if let (index, ring) = layout.petalIndex(
+                        at: value.location, center: center, petalSize: style.petalSize)
+                    {
                         // Tap on petal - check if it matches current selection
                         print("[Gesture] tap on petal: index=\(index), ring=\(ring)")
                         let tappedColor = layout.color(for: index, ring: ring)
@@ -78,7 +82,7 @@ public struct ExpandedBlossomView: View {
         .onContinuousHover { phase in
             let center = CGPoint(x: totalSize / 2, y: totalSize / 2)
             switch phase {
-            case let .active(location):
+            case .active(let location):
                 if let (index, ring) = layout.petalIndex(at: location, center: center, petalSize: style.petalSize) {
                     model.hoveredPetalIndex = index
                     model.hoveredRing = ring
@@ -151,17 +155,20 @@ public struct ExpandedBlossomView: View {
 
         let degrees = atan2(dy, dx) * 180 / .pi
         let normalizedDegrees = degrees < 0 ? degrees + 360 : degrees
-        let isLightnessArc = degrees >= BlossomConstants.arcStartAngle - 10
+        let isLightnessArc =
+            degrees >= BlossomConstants.arcStartAngle - 10
             && degrees <= BlossomConstants.arcEndAngle + 10
         let previewAngles = previewArcAngles
-        let isPreviewArc = if supportsOpacity {
-            degrees >= previewAngles.start - 10
-                && degrees <= previewAngles.end + 10
-        } else {
-            normalizedDegrees >= previewAngles.start - 10
-                && normalizedDegrees <= previewAngles.end + 10
-        }
-        let isOpacityArc = supportsOpacity
+        let isPreviewArc =
+            if supportsOpacity {
+                degrees >= previewAngles.start - 10
+                    && degrees <= previewAngles.end + 10
+            } else {
+                normalizedDegrees >= previewAngles.start - 10
+                    && normalizedDegrees <= previewAngles.end + 10
+            }
+        let isOpacityArc =
+            supportsOpacity
             && normalizedDegrees >= BlossomConstants.opacityArcStartAngle - 10
             && normalizedDegrees <= BlossomConstants.opacityArcEndAngle + 10
         return isLightnessArc || isPreviewArc || isOpacityArc
@@ -186,16 +193,16 @@ public struct ExpandedBlossomView: View {
 }
 
 #if BLOSSOM_ENABLE_PREVIEWS
-#Preview {
-    @Previewable @State var model = BlossomColorPickerModel(initialColor: .green)
+    #Preview {
+        @Previewable @State var model = BlossomColorPickerModel(initialColor: .green)
 
-    ExpandedBlossomView(
-        model: model,
-        layout: PetalLayout(),
-    )
-    .onAppear {
-        model.expand()
+        ExpandedBlossomView(
+            model: model,
+            layout: PetalLayout(),
+        )
+        .onAppear {
+            model.expand()
+        }
+        .padding(40)
     }
-    .padding(40)
-}
 #endif

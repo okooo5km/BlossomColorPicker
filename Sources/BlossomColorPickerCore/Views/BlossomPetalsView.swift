@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct BlossomPetalsView: View {
-    @Bindable var model: BlossomColorPickerModel
+    @ObservedObject var model: BlossomColorPickerModel
     let layout: PetalLayout
     let center: CGPoint
 
@@ -24,7 +24,7 @@ struct BlossomPetalsView: View {
     var body: some View {
         ZStack {
             // Outer ring petals (12) - rendered first (behind), animates after inner
-            ForEach(0 ..< layout.outerPetalCount, id: \.self) { index in
+            ForEach(0..<layout.outerPetalCount, id: \.self) { index in
                 let offset = petalOffset(for: index, ring: .outer)
                 let color = layout.color(for: index, ring: .outer)
                 let expandDelay = Double(index + layout.innerPetalCount) * BlossomConstants.petalAnimationDelay
@@ -69,7 +69,7 @@ struct BlossomPetalsView: View {
             outerLoopPetal
 
             // Inner ring petals (6) - rendered on top, animates first (inside to outside)
-            ForEach(0 ..< layout.innerPetalCount, id: \.self) { index in
+            ForEach(0..<layout.innerPetalCount, id: \.self) { index in
                 let offset = petalOffset(for: index, ring: .inner)
                 let color = layout.color(for: index, ring: .inner)
                 let expandDelay = Double(index) * BlossomConstants.petalAnimationDelay
@@ -173,17 +173,17 @@ struct BlossomPetalsView: View {
 }
 
 #if BLOSSOM_ENABLE_PREVIEWS
-#Preview {
-    @Previewable @State var model = BlossomColorPickerModel()
+    #Preview {
+        @Previewable @State var model = BlossomColorPickerModel()
 
-    BlossomPetalsView(
-        model: model,
-        layout: PetalLayout(),
-        center: CGPoint(x: 150, y: 150),
-    )
-    .frame(width: 300, height: 300)
-    .onAppear {
-        model.expand()
+        BlossomPetalsView(
+            model: model,
+            layout: PetalLayout(),
+            center: CGPoint(x: 150, y: 150),
+        )
+        .frame(width: 300, height: 300)
+        .onAppear {
+            model.expand()
+        }
     }
-}
 #endif

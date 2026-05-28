@@ -6,7 +6,7 @@ struct ArcSliderView: View {
         case opacity
     }
 
-    @Bindable var model: BlossomColorPickerModel
+    @ObservedObject var model: BlossomColorPickerModel
     let radius: CGFloat
     let kind: Kind
 
@@ -111,7 +111,7 @@ struct ArcSliderView: View {
         case .lightness:
             // Blend from selected color to white based on brightness
             let t = model.lightness / 100.0
-            let adjustedSaturation = model.saturation * (1.0 - t * 0.8) // Reduce saturation towards white
+            let adjustedSaturation = model.saturation * (1.0 - t * 0.8)  // Reduce saturation towards white
             return Color(hue: model.hue / 360.0, saturation: adjustedSaturation, brightness: 0.2 + t * 0.8)
         case .opacity:
             return model.selectedColor.opacity(model.opacity)
@@ -122,14 +122,15 @@ struct ArcSliderView: View {
         switch kind {
         case .lightness:
             // Gradient from dark color to white
-            return (0 ..< BlossomConstants.arcGradientSteps).map { i in
+            return (0..<BlossomConstants.arcGradientSteps).map { i in
                 let t = Double(i) / Double(BlossomConstants.arcGradientSteps - 1)
-                let brightness = 1.0 - t // 1.0 at start (white end), 0.0 at end (dark end)
-                let saturation = model.saturation * t // 0 at white end, full at color end
-                return Color(hue: model.hue / 360.0, saturation: saturation, brightness: max(0.1, brightness * 0.8 + 0.2))
+                let brightness = 1.0 - t  // 1.0 at start (white end), 0.0 at end (dark end)
+                let saturation = model.saturation * t  // 0 at white end, full at color end
+                return Color(
+                    hue: model.hue / 360.0, saturation: saturation, brightness: max(0.1, brightness * 0.8 + 0.2))
             }
         case .opacity:
-            return (0 ..< BlossomConstants.arcGradientSteps).map { i in
+            return (0..<BlossomConstants.arcGradientSteps).map { i in
                 let t = Double(i) / Double(BlossomConstants.arcGradientSteps - 1)
                 return model.selectedColor.opacity(max(0.08, t))
             }
@@ -177,14 +178,14 @@ struct ArcShape: Shape {
 }
 
 #if BLOSSOM_ENABLE_PREVIEWS
-#Preview {
-    @Previewable @State var model = BlossomColorPickerModel(initialColor: .green)
+    #Preview {
+        @Previewable @State var model = BlossomColorPickerModel(initialColor: .green)
 
-    ArcSliderView(model: model, radius: BlossomConstants.arcSliderRadius, kind: .lightness)
-        .frame(width: 250, height: 250)
-        .onAppear {
-            model.expand()
-        }
-        .padding(40)
-}
+        ArcSliderView(model: model, radius: BlossomConstants.arcSliderRadius, kind: .lightness)
+            .frame(width: 250, height: 250)
+            .onAppear {
+                model.expand()
+            }
+            .padding(40)
+    }
 #endif

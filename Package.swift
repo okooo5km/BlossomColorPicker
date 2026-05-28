@@ -6,14 +6,14 @@ import PackageDescription
 let package = Package(
     name: "BlossomColorPicker",
     platforms: [
-        .macOS(.v14),
+        .macOS(.v13),
         .iOS(.v17),
     ],
     products: [
         .library(
             name: "BlossomColorPicker",
             targets: ["BlossomColorPicker"],
-        ),
+        )
     ],
     targets: [
         .target(

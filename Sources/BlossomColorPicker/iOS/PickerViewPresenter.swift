@@ -28,7 +28,7 @@
             self.model = model
 
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                  let window = windowScene.windows.first(where: { $0.isKeyWindow })
+                let window = windowScene.windows.first(where: { $0.isKeyWindow })
             else {
                 print("[Presenter] No key window found")
                 return
@@ -95,7 +95,7 @@
             // Wait for collapse animation to complete before removing view
             print("[Presenter] waiting for animation...")
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(350))
+                try? await Task.sleep(nanoseconds: 350_000_000)
                 print("[Presenter] removing overlay after delay")
                 overlayView?.removeFromSuperview()
                 overlayView = nil
@@ -123,7 +123,7 @@
         private func setupBackgroundObserver() {
             // Delay observer setup to avoid triggering immediately
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(100))
+                try? await Task.sleep(nanoseconds: 100_000_000)
 
                 // Check if overlay still exists (might have been dismissed already)
                 guard self.overlayView != nil else { return }

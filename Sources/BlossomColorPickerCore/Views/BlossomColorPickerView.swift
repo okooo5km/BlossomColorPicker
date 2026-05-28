@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct BlossomColorPickerView: View {
-    @Bindable var model: BlossomColorPickerModel
+    @ObservedObject var model: BlossomColorPickerModel
     let layout: PetalLayout
 
     @Environment(\.blossomStyle) private var style
@@ -28,26 +28,26 @@ struct BlossomColorPickerView: View {
 }
 
 #if BLOSSOM_ENABLE_PREVIEWS
-#Preview("Collapsed") {
-    @Previewable @State var model = BlossomColorPickerModel(initialColor: .blue)
+    #Preview("Collapsed") {
+        @Previewable @State var model = BlossomColorPickerModel(initialColor: .blue)
 
-    BlossomColorPickerView(
-        model: model,
-        layout: PetalLayout(),
-    )
-    .padding(40)
-}
-
-#Preview("Expanded") {
-    @Previewable @State var model = BlossomColorPickerModel(initialColor: .orange)
-
-    BlossomColorPickerView(
-        model: model,
-        layout: PetalLayout(),
-    )
-    .onAppear {
-        model.expand()
+        BlossomColorPickerView(
+            model: model,
+            layout: PetalLayout(),
+        )
+        .padding(40)
     }
-    .padding(40)
-}
+
+    #Preview("Expanded") {
+        @Previewable @State var model = BlossomColorPickerModel(initialColor: .orange)
+
+        BlossomColorPickerView(
+            model: model,
+            layout: PetalLayout(),
+        )
+        .onAppear {
+            model.expand()
+        }
+        .padding(40)
+    }
 #endif

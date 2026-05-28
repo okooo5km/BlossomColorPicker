@@ -19,9 +19,10 @@ import SwiftUI
 public struct BlossomColorPicker: View {
     @Binding private var selection: Color
     private let opacity: Binding<Double>?
-    @State private var model: BlossomColorPickerModel
+    @StateObject private var model: BlossomColorPickerModel
     @State private var presenter = PickerPresenter()
     @State private var isCooldown = false
+    @State private var previousExpansion = false
 
     private let layout: PetalLayout
     private let supportsOpacity: Bool
@@ -44,10 +45,11 @@ public struct BlossomColorPicker: View {
     ) {
         _selection = selection
         self.opacity = opacity
-        _model = State(wrappedValue: BlossomColorPickerModel(
-            initialColor: selection.wrappedValue,
-            opacity: opacity?.wrappedValue
-        ))
+        _model = StateObject(
+            wrappedValue: BlossomColorPickerModel(
+                initialColor: selection.wrappedValue,
+                opacity: opacity?.wrappedValue
+            ))
         self.layout = layout
         self.supportsOpacity = supportsOpacity && opacity != nil
         self.onColorChange = onColorChange
@@ -66,7 +68,7 @@ public struct BlossomColorPicker: View {
     ) {
         _selection = .constant(initialColor)
         opacity = nil
-        _model = State(wrappedValue: BlossomColorPickerModel(initialColor: initialColor, opacity: initialOpacity))
+        _model = StateObject(wrappedValue: BlossomColorPickerModel(initialColor: initialColor, opacity: initialOpacity))
         self.layout = layout
         self.supportsOpacity = supportsOpacity
         self.onColorChange = onColorChange
@@ -86,63 +88,66 @@ public struct BlossomColorPicker: View {
                 Circle()
                     .fill(supportsOpacity ? model.previewColor : model.selectedColor)
             }
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .stroke(
-                            .primary.opacity(BlossomConstants.collapsedSwatchBorderOpacity),
-                            lineWidth: BlossomConstants.borderWidth,
-                        ),
-                )
-                .frame(width: size, height: size)
-                .contentShape(Circle())
-                .onTapGesture {
-                    // Prevent rapid re-opening
-                    guard !isCooldown else {
-                        print("[BlossomColorPicker] tap ignored - cooldown active")
-                        return
-                    }
-
-                    print("[BlossomColorPicker] tap gesture, model.isExpanded: \(model.isExpanded)")
-
-                    // Start cooldown
-                    isCooldown = true
-                    Task {
-                        try? await Task.sleep(for: .seconds(1))
-                        isCooldown = false
-                    }
-
-                    // Get screen position of swatch center
-                    let frame = geometry.frame(in: .global)
-                    let screenPoint = convertToScreenCoordinates(frame: frame)
-                    print("[BlossomColorPicker] calling presenter.show()")
-                    presenter.show(at: screenPoint, model: model, layout: layout, supportsOpacity: supportsOpacity)
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(
+                        .primary.opacity(BlossomConstants.collapsedSwatchBorderOpacity),
+                        lineWidth: BlossomConstants.borderWidth,
+                    ),
+            )
+            .frame(width: size, height: size)
+            .contentShape(Circle())
+            .onTapGesture {
+                // Prevent rapid re-opening
+                guard !isCooldown else {
+                    print("[BlossomColorPicker] tap ignored - cooldown active")
+                    return
                 }
-                .accessibilityLabel("Color picker")
-                .accessibilityHint("Tap to expand color picker")
-                .accessibilityAddTraits(.isButton)
+
+                print("[BlossomColorPicker] tap gesture, model.isExpanded: \(model.isExpanded)")
+
+                // Start cooldown
+                isCooldown = true
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    isCooldown = false
+                }
+
+                // Get screen position of swatch center
+                let frame = geometry.frame(in: .global)
+                let screenPoint = convertToScreenCoordinates(frame: frame)
+                print("[BlossomColorPicker] calling presenter.show()")
+                presenter.show(at: screenPoint, model: model, layout: layout, supportsOpacity: supportsOpacity)
+            }
+            .accessibilityLabel("Color picker")
+            .accessibilityHint("Tap to expand color picker")
+            .accessibilityAddTraits(.isButton)
         }
         .aspectRatio(1, contentMode: .fit)
-        .onChange(of: model.selectedColor) { _, newValue in
+        .onChange(of: model.selectedColor) { newValue in
             selection = newValue
             onColorChange?(newValue)
         }
-        .onChange(of: model.opacity) { _, newValue in
+        .onChange(of: model.opacity) { newValue in
             opacity?.wrappedValue = newValue
             onOpacityChange?(newValue)
         }
-        .onChange(of: selection) { _, newValue in
+        .onChange(of: selection) { newValue in
             if model.selectedColor != newValue {
                 model.selectedColor = newValue
             }
         }
-        .onChange(of: boundOpacity) { _, newValue in
+        .onChange(of: boundOpacity) { newValue in
             guard let newValue, abs(model.opacity - newValue) > 0.001 else { return }
             model.updateOpacity(newValue)
         }
-        .onChange(of: model.isExpanded) { wasExpanded, isExpanded in
-            print("[BlossomColorPicker] onChange isExpanded: \(wasExpanded) -> \(isExpanded)")
-            if wasExpanded, !isExpanded {
+        .onChange(of: model.isExpanded) { isExpanded in
+            print("[BlossomColorPicker] onChange isExpanded: \(previousExpansion) -> \(isExpanded)")
+            defer {
+                previousExpansion = isExpanded
+            }
+            if previousExpansion, !isExpanded {
                 print("[BlossomColorPicker] calling presenter.dismiss()")
                 presenter.dismiss()
                 onDismiss?(model.selectedColor)
@@ -176,32 +181,32 @@ public struct BlossomColorPicker: View {
 }
 
 #if BLOSSOM_ENABLE_PREVIEWS
-#Preview("Binding-based") {
-    @Previewable @State var color = Color.blue
+    #Preview("Binding-based") {
+        @Previewable @State var color = Color.blue
 
-    VStack(spacing: 40) {
-        BlossomColorPicker(selection: $color)
-            .frame(width: 32, height: 32)
+        VStack(spacing: 40) {
+            BlossomColorPicker(selection: $color)
+                .frame(width: 32, height: 32)
 
-        Rectangle()
-            .fill(color)
-            .frame(width: 100, height: 100)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            Rectangle()
+                .fill(color)
+                .frame(width: 100, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(60)
     }
-    .padding(60)
-}
 
-#Preview("Callback-based") {
-    BlossomColorPicker(
-        initialColor: .orange,
-        onColorChange: { color in
-            print("Color changed: \(color)")
-        },
-        onDismiss: { finalColor in
-            print("Dismissed with: \(finalColor)")
-        },
-    )
-    .frame(width: 32, height: 32)
-    .padding(60)
-}
+    #Preview("Callback-based") {
+        BlossomColorPicker(
+            initialColor: .orange,
+            onColorChange: { color in
+                print("Color changed: \(color)")
+            },
+            onDismiss: { finalColor in
+                print("Dismissed with: \(finalColor)")
+            },
+        )
+        .frame(width: 32, height: 32)
+        .padding(60)
+    }
 #endif

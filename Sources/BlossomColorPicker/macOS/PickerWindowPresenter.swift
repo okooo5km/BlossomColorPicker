@@ -91,7 +91,7 @@
             // Wait for collapse animation to complete before closing window
             print("[Presenter] waiting for animation...")
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(350))
+                try? await Task.sleep(nanoseconds: 350_000_000)
                 print("[Presenter] closing window after delay")
                 window?.close()
                 window = nil
@@ -119,7 +119,8 @@
         }
 
         private func setupClickOutsideMonitor(totalSize _: CGFloat) {
-            localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown]) { [weak self] event in
+            localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown])
+            { [weak self] event in
                 guard let self, let window else { return event }
 
                 if event.type == .keyDown {
@@ -149,7 +150,7 @@
         private func setupAppDeactivateObserver() {
             // Delay observer setup to avoid triggering immediately on window show
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(100))
+                try? await Task.sleep(nanoseconds: 100_000_000)
 
                 // Check if window still exists (might have been dismissed already)
                 guard self.window != nil else { return }
